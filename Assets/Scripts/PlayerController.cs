@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//@Author: Eloi Marotrell Martin
+
 public class PlayerController : MonoBehaviour
 {
 
@@ -10,6 +12,8 @@ public class PlayerController : MonoBehaviour
     private float moveInput;
 
     private Rigidbody2D rb;
+    //aqui referenciaremos al anumator que tiene player
+    public Animator animator;
 
     private bool isGrounded;
     public Transform groundCheck;
@@ -26,6 +30,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        //dibuja el ground check
         Gizmos.DrawWireSphere(groundCheck.transform.position, checkRadius);
     }
 
@@ -42,7 +47,9 @@ public class PlayerController : MonoBehaviour
         //Moverse
         moveInput = Input.GetAxis("Horizontal");
         rb.velocity = new Vector2(moveInput * speed, rb.velocity.y);
-
+        //chapuza para que salte la animación de caminar, seguir viendo:
+        //https://www.youtube.com/watch?v=hkaysu1Z-N8&t=232s
+        animator.SetFloat("speed", Mathf.Abs(moveInput * speed));
 
     }
 
