@@ -47,9 +47,18 @@ public class PlayerController : MonoBehaviour
         //Moverse
         moveInput = Input.GetAxis("Horizontal");
         rb.velocity = new Vector2(moveInput * speed, rb.velocity.y);
-        //chapuza para que salte la animación de caminar, seguir viendo:
-        //https://www.youtube.com/watch?v=hkaysu1Z-N8&t=232s
-        animator.SetFloat("speed", Mathf.Abs(moveInput * speed));
+        animator.SetFloat("speed", Mathf.Abs(moveInput));
+
+        //TODO: Cambiar esto a la forma correcta https://www.youtube.com/watch?v=Cr-j7EoM8bg
+        if (moveInput > 0)
+        {
+            gameObject.transform.localScale = new Vector3(1,1,1);
+        }
+        
+        if(moveInput < 0)
+        {
+            gameObject.transform.localScale = new Vector3(-1, 1, 1);
+        }
 
     }
 
@@ -59,6 +68,11 @@ public class PlayerController : MonoBehaviour
         if (isGrounded == true)
         {
             extraJumps = extraJumpsValue;
+            animator.SetBool("isJumping", false);
+        }
+        else
+        {
+            animator.SetBool("isJumping", true);
         }
 
         if (Input.GetButtonDown("Jump") && extraJumps > 0)
