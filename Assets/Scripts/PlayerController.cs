@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-//@Author: Eloi Marotrell Martin
+//@Author: Eloi Martorell Martin
 
 public class PlayerController : MonoBehaviour
 {
@@ -12,7 +12,7 @@ public class PlayerController : MonoBehaviour
     private float moveInput;
 
     private Rigidbody2D rb;
-    //aqui referenciaremos al anumator que tiene player
+    //Aqui referenciaremos al anumator que tiene player.
     public Animator animator;
 
     private bool isGrounded;
@@ -30,7 +30,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        //dibuja el ground check
+        //Dibuja el ground check, gracias Raul
         Gizmos.DrawWireSphere(groundCheck.transform.position, checkRadius);
     }
 
@@ -49,6 +49,7 @@ public class PlayerController : MonoBehaviour
         rb.velocity = new Vector2(moveInput * speed, rb.velocity.y);
         animator.SetFloat("speed", Mathf.Abs(moveInput));
 
+        //Rotar el sprite depndiendo de la direccion.
         //TODO: Cambiar esto a la forma correcta https://www.youtube.com/watch?v=Cr-j7EoM8bg
         if (moveInput > 0)
         {
@@ -64,7 +65,8 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        //Saltar
+        //Debug.Log("Estado animator: " + animator.GetBool("isJumping"));
+        //Detectar si está en el suelo y dar saltos extras
         if (isGrounded == true)
         {
             extraJumps = extraJumpsValue;
@@ -72,19 +74,27 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            animator.SetBool("isJumping", true);
+            if (animator.GetBool("isJumping") == false)
+            {
+                //Solo lo va a pasar a true una vez.
+                animator.SetBool("isJumping", true);
+            }
+            
         }
 
+        //Saltar
         if (Input.GetButtonDown("Jump") && extraJumps > 0)
         {
             rb.velocity = Vector2.up * jumpForce;
             extraJumps--;
+            
         }
         else if (Input.GetButton("Jump") && extraJumps == 0 && isGrounded == true)
         {
             rb.velocity = Vector2.up * jumpForce;
         }
 
+        //MODIF Gravedad
         //si estamos cayendo: v < 0
         //si estamos saltando v > 0
         if (rb.velocity.y < 0)
@@ -96,6 +106,7 @@ public class PlayerController : MonoBehaviour
             rb.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
         }
 
+        //Rotar
         if (Input.GetKey(KeyCode.Q))
         {
             transform.Rotate(Vector3.forward * torque * Time.deltaTime);
