@@ -12,7 +12,7 @@ public class PlayerController : MonoBehaviour
     private float moveInput;
 
     private Rigidbody2D rb;
-    //Aqui referenciaremos al anumator que tiene player.
+    //Aqui referenciaremos al animator que tiene player.
     public Animator animator;
 
     private bool isGrounded;
