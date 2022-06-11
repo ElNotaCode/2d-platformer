@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-
+    //Velocidad y capacidad de salto.
     public float speed;
     public float jumpForce;
     private float moveInput;
@@ -15,22 +15,33 @@ public class PlayerController : MonoBehaviour
     //Aqui referenciaremos al animator que tiene player.
     public Animator animator;
 
+    //Para mirar si está en el suelo.
     private bool isGrounded;
     public Transform groundCheck;
     public float checkRadius;
     public LayerMask whatIsGround;
 
+    //Saltos extras.
     private int extraJumps;
     public int extraJumpsValue;
 
+    //Modificadores de gravedad.
     public float fallMultiplayer;
     public float lowJumpMultiplier;
 
     public float torque;
 
+    //Sonidos.
+    public AudioSource walkSoundEffect;
+    public AudioSource firstJumpSoundEffect;
+    public AudioSource secondJumpSoundEffect;
+
+    //Particulas.
+    public ParticleSystem dust;
+
     private void OnDrawGizmos()
     {
-        //Dibuja el ground check, gracias Raul
+        //Dibuja el ground check, gracias Raul.
         Gizmos.DrawWireSphere(groundCheck.transform.position, checkRadius);
     }
 
@@ -42,9 +53,10 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        //Ground check.
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, checkRadius, whatIsGround);
 
-        //Moverse
+        //Moverse.
         moveInput = Input.GetAxis("Horizontal");
         rb.velocity = new Vector2(moveInput * speed, rb.velocity.y);
         animator.SetFloat("speed", Mathf.Abs(moveInput));
@@ -61,12 +73,27 @@ public class PlayerController : MonoBehaviour
             gameObject.transform.localScale = new Vector3(-1, 1, 1);
         }
 
+        if(moveInput != 0 && isGrounded)
+        {
+            if (!walkSoundEffect.isPlaying)
+            {
+                walkSoundEffect.Play();
+            }
+
+            dust.Play();
+
+        }
+        else
+        {
+            dust.Stop();
+        }
+
     }
 
     private void Update()
     {
         //Debug.Log("Estado animator: " + animator.GetBool("isJumping"));
-        //Detectar si está en el suelo y dar saltos extras
+        //Detectar si está en el suelo.
         if (isGrounded == true)
         {
             extraJumps = extraJumpsValue;
@@ -82,16 +109,18 @@ public class PlayerController : MonoBehaviour
             
         }
 
-        //Saltar
+        //Saltar y dar saltos extras.
         if (Input.GetButtonDown("Jump") && extraJumps > 0)
         {
             rb.velocity = Vector2.up * jumpForce;
             extraJumps--;
+            firstJumpSoundEffect.Play();
             
         }
         else if (Input.GetButton("Jump") && extraJumps == 0 && isGrounded == true)
         {
             rb.velocity = Vector2.up * jumpForce;
+            secondJumpSoundEffect.Play();
         }
 
         //MODIF Gravedad
@@ -106,7 +135,7 @@ public class PlayerController : MonoBehaviour
             rb.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
         }
 
-        //Rotar
+        //Rotar.
         if (Input.GetKey(KeyCode.Q))
         {
             transform.Rotate(Vector3.forward * torque * Time.deltaTime);
@@ -118,4 +147,5 @@ public class PlayerController : MonoBehaviour
         }
 
     }
+
 }
