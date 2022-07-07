@@ -7,16 +7,16 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     //Velocidad y capacidad de salto.
+    [Header("Velocidad y capacidad de salto:")]
     public float speed;
     public float jumpForce;
     private float moveInput;
 
     private Rigidbody2D rb;
-    //Aqui referenciaremos al animator que tiene player.
-    public Animator animator;
 
     //Para mirar si está en el suelo.
     private bool isGrounded;
+    [Header("Check salto, gravedad y vel giro:")]
     public Transform groundCheck;
     public float checkRadius;
     public LayerMask whatIsGround;
@@ -29,15 +29,24 @@ public class PlayerController : MonoBehaviour
     public float fallMultiplayer;
     public float lowJumpMultiplier;
 
+    //modificador de giro en el aire
     public float torque;
 
+    [Header("Sonidos:")]
     //Sonidos.
     public AudioSource walkSoundEffect;
     public AudioSource firstJumpSoundEffect;
     public AudioSource secondJumpSoundEffect;
 
+    [Header("Animator y particulas:")]
+    //Aqui referenciaremos al animator que tiene player.
+    public Animator animator;
     //Particulas.
     public ParticleSystem dust;
+    public ParticleSystem wind;
+
+    private bool changedDirectionPositive = false;
+    private bool changedDirectionNegative = false;
 
     private void OnDrawGizmos()
     {
@@ -62,15 +71,27 @@ public class PlayerController : MonoBehaviour
         animator.SetFloat("speed", Mathf.Abs(moveInput));
 
         //Rotar el sprite depndiendo de la direccion.
-        //TODO: Cambiar esto a la forma correcta https://www.youtube.com/watch?v=Cr-j7EoM8bg
         if (moveInput > 0)
         {
             gameObject.transform.localScale = new Vector3(1,1,1);
+            changedDirectionPositive = true;
         }
         
         if(moveInput < 0)
         {
             gameObject.transform.localScale = new Vector3(-1, 1, 1);
+            changedDirectionNegative = true;
+        }
+
+        if (changedDirectionPositive && changedDirectionNegative)
+        {
+            changedDirectionPositive = false;
+            changedDirectionNegative = false;
+            if (isGrounded)
+            {
+                dust.Play();
+            }
+            
         }
 
         if(moveInput != 0 && isGrounded)
@@ -80,12 +101,6 @@ public class PlayerController : MonoBehaviour
                 walkSoundEffect.Play();
             }
 
-            dust.Play();
-
-        }
-        else
-        {
-            dust.Stop();
         }
 
     }
@@ -115,12 +130,21 @@ public class PlayerController : MonoBehaviour
             rb.velocity = Vector2.up * jumpForce;
             extraJumps--;
             firstJumpSoundEffect.Play();
-            
         }
         else if (Input.GetButton("Jump") && extraJumps == 0 && isGrounded == true)
         {
             rb.velocity = Vector2.up * jumpForce;
             secondJumpSoundEffect.Play();
+        }
+
+        if (Input.GetButton("Jump") && isGrounded == true)
+        {
+            dust.Play();
+        }
+
+        if (Input.GetButton("Jump") && isGrounded == false)
+        {
+            wind.Play();
         }
 
         //MODIF Gravedad
