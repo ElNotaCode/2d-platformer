@@ -31,6 +31,7 @@ public class GameOverMenu : MonoBehaviour
     public void TryAgain()
     {
         Time.timeScale = 1f;
+        PauseMenu.isPaused = false;
         SceneManager.LoadScene("Level1");
     }
 
