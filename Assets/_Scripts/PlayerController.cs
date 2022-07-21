@@ -14,12 +14,13 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody2D rb;
 
-    //Para mirar si está en el suelo.
-    private bool isGrounded;
+    
     [Header("Check salto, gravedad y vel giro:")]
     public Transform groundCheck;
     public float checkRadius;
     public LayerMask whatIsGround;
+    //Para mirar si está en el suelo.
+    private bool isGrounded;
 
     //Saltos extras.
     private int extraJumps;
@@ -48,10 +49,18 @@ public class PlayerController : MonoBehaviour
     private bool changedDirectionPositive = false;
     private bool changedDirectionNegative = false;
 
+    [Header("Check de cabeza:")]
+    public Transform headCheck;
+    public float headCheckRadius;
+    //Para mirar si se ha golpeado la cabeza
+    private bool isHeadKicked;
+
     private void OnDrawGizmos()
     {
         //Dibuja el ground check, gracias Raul.
         Gizmos.DrawWireSphere(groundCheck.transform.position, checkRadius);
+        //dibuja el head check
+        Gizmos.DrawWireSphere(headCheck.transform.position, headCheckRadius);
     }
 
     private void Start()
@@ -64,112 +73,136 @@ public class PlayerController : MonoBehaviour
     {
         //Ground check.
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, checkRadius, whatIsGround);
+        //Head check
+        isHeadKicked = Physics2D.OverlapCircle(headCheck.position, checkRadius, whatIsGround);
 
-        //Moverse.
-        moveInput = Input.GetAxis("Horizontal");
-        rb.velocity = new Vector2(moveInput * speed, rb.velocity.y);
-        animator.SetFloat("speed", Mathf.Abs(moveInput));
-
-        //Rotar el sprite depndiendo de la direccion.
-        if (moveInput > 0)
+        if (!PauseMenu.isPaused)
         {
-            gameObject.transform.localScale = new Vector3(1,1,1);
-            changedDirectionPositive = true;
+
+            //Moverse.
+            moveInput = Input.GetAxis("Horizontal");
+            rb.velocity = new Vector2(moveInput * speed, rb.velocity.y);
+            animator.SetFloat("speed", Mathf.Abs(moveInput));
+
+            //Rotar el sprite depndiendo de la direccion.
+            if (moveInput > 0)
+            {
+                gameObject.transform.localScale = new Vector3(1, 1, 1);
+                changedDirectionPositive = true;
+            }
+
+            if (moveInput < 0)
+            {
+                gameObject.transform.localScale = new Vector3(-1, 1, 1);
+                changedDirectionNegative = true;
+            }
+
+            if (changedDirectionPositive && changedDirectionNegative)
+            {
+                changedDirectionPositive = false;
+                changedDirectionNegative = false;
+                if (isGrounded)
+                {
+                    dust.Play();
+                }
+
+            }
+
+            if (moveInput != 0 && isGrounded)
+            {
+                if (!walkSoundEffect.isPlaying)
+                {
+                    walkSoundEffect.Play();
+                }
+
+            }
+
         }
-        
-        if(moveInput < 0)
-        {
-            gameObject.transform.localScale = new Vector3(-1, 1, 1);
-            changedDirectionNegative = true;
-        }
 
-        if (changedDirectionPositive && changedDirectionNegative)
+    }
+    private void Update()
+    {
+
+        if (!PauseMenu.isPaused)
         {
-            changedDirectionPositive = false;
-            changedDirectionNegative = false;
-            if (isGrounded)
+
+            //Debug.Log("Estado animator: " + animator.GetBool("isJumping"));
+            //Detectar si está en el suelo.
+            if (isGrounded == true)
+            {
+                extraJumps = extraJumpsValue;
+                animator.SetBool("isJumping", false);
+            }
+            else
+            {
+                if (animator.GetBool("isJumping") == false)
+                {
+                    //Solo lo va a pasar a true una vez.
+                    animator.SetBool("isJumping", true);
+                }
+
+            }
+
+            //Saltar y dar saltos extras.
+            if (Input.GetButtonDown("Jump") && extraJumps > 0)
+            {
+                rb.velocity = Vector2.up * jumpForce;
+                extraJumps--;
+                firstJumpSoundEffect.Play();
+            }
+            else if (Input.GetButton("Jump") && extraJumps == 0 && isGrounded == true)
+            {
+                rb.velocity = Vector2.up * jumpForce;
+                secondJumpSoundEffect.Play();
+            }
+
+            if (Input.GetButton("Jump") && isGrounded == true)
             {
                 dust.Play();
             }
-            
-        }
 
-        if(moveInput != 0 && isGrounded)
-        {
-            if (!walkSoundEffect.isPlaying)
+            if (Input.GetButton("Jump") && isGrounded == false)
             {
-                walkSoundEffect.Play();
+                wind.Play();
+            }
+
+            //MODIF Gravedad
+            //si estamos cayendo: v < 0
+            //si estamos saltando v > 0
+            if (rb.velocity.y < 0)
+            {
+                rb.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplayer - 1) * Time.deltaTime;
+            }
+            else if (rb.velocity.y > 0 && !Input.GetButton("Jump")) //si pulsamos rápido
+            {
+                rb.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
+            }
+
+            //Rotar.
+            if (Input.GetKey(KeyCode.Q))
+            {
+                transform.Rotate(Vector3.forward * torque * Time.deltaTime);
+            }
+
+            if (Input.GetKey(KeyCode.E))
+            {
+                transform.Rotate(Vector3.forward * -torque * Time.deltaTime);
+            }
+
+            //Caida de cabeza
+            if (isHeadKicked)
+            {
+                Debug.Log("AAAAAU!!!");
+                rb.velocity = Vector2.up * jumpForce;
             }
 
         }
 
     }
 
-    private void Update()
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        //Debug.Log("Estado animator: " + animator.GetBool("isJumping"));
-        //Detectar si está en el suelo.
-        if (isGrounded == true)
-        {
-            extraJumps = extraJumpsValue;
-            animator.SetBool("isJumping", false);
-        }
-        else
-        {
-            if (animator.GetBool("isJumping") == false)
-            {
-                //Solo lo va a pasar a true una vez.
-                animator.SetBool("isJumping", true);
-            }
-            
-        }
-
-        //Saltar y dar saltos extras.
-        if (Input.GetButtonDown("Jump") && extraJumps > 0)
-        {
-            rb.velocity = Vector2.up * jumpForce;
-            extraJumps--;
-            firstJumpSoundEffect.Play();
-        }
-        else if (Input.GetButton("Jump") && extraJumps == 0 && isGrounded == true)
-        {
-            rb.velocity = Vector2.up * jumpForce;
-            secondJumpSoundEffect.Play();
-        }
-
-        if (Input.GetButton("Jump") && isGrounded == true)
-        {
-            dust.Play();
-        }
-
-        if (Input.GetButton("Jump") && isGrounded == false)
-        {
-            wind.Play();
-        }
-
-        //MODIF Gravedad
-        //si estamos cayendo: v < 0
-        //si estamos saltando v > 0
-        if (rb.velocity.y < 0)
-        {
-            rb.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplayer - 1) * Time.deltaTime;
-        }
-        else if (rb.velocity.y > 0 && !Input.GetButton("Jump")) //si pulsamos rápido
-        {
-            rb.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
-        }
-
-        //Rotar.
-        if (Input.GetKey(KeyCode.Q))
-        {
-            transform.Rotate(Vector3.forward * torque * Time.deltaTime);
-        }
-
-        if (Input.GetKey(KeyCode.E))
-        {
-            transform.Rotate(Vector3.forward * - torque * Time.deltaTime);
-        }
-
+        Debug.Log("Trigger!");
     }
 
 }
